@@ -21,6 +21,13 @@ class _ListPageBlocState extends State<ListPageBloc> {
 
   @override
   Widget build(BuildContext context) {
-    throw UnimplementedError('Page not implemented!');
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Lista oldal'),
+      ),
+      body: const Center(
+        child: Text('Üdvözöllek a lista oldalon!'),
+      ),
+    );
   }
 }
