@@ -20,13 +20,11 @@ class _LoginPageBlocState extends State<LoginPageBloc> {
 
   String? _emailError;
   String? _passwordError;
-
-  late LoginBloc _loginBloc;
+  bool _enabled = true;
 
   @override
   void initState() {
     super.initState();
-    _loginBloc = LoginBloc();
     context.read<LoginBloc>().add(LoginAutoLoginEvent());
   }
 
@@ -54,12 +52,13 @@ class _LoginPageBlocState extends State<LoginPageBloc> {
     if (_emailError != null || _passwordError != null){
       return false;
     }
+    _enabled = true;
     return true;
   }
 
   void showErrorMessage(String message) {
-    ScaffoldMessenger.of(context).showSnackBar( const SnackBar(
-      content: Text('Error'),
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(message),
       duration: Duration(milliseconds: 300),
     ));
   }
@@ -67,7 +66,7 @@ class _LoginPageBlocState extends State<LoginPageBloc> {
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<LoginBloc, LoginState>(
-        buildWhen: (context, state) => state is LoginForm,
+        buildWhen: (context, state) => state is LoginForm || state is LoginLoading,
         listenWhen: (context, state) {
           if (state is LoginError || state is LoginSuccess) {
             return true;
@@ -76,15 +75,22 @@ class _LoginPageBlocState extends State<LoginPageBloc> {
         },
         listener: (context, state) => {
           if (state is LoginError) {
+            setState(() {
+              _enabled = true;
+            }),
             showErrorMessage(state.message)
           },
-          print("KAKA_LOGINPAGE"),
           if (state is LoginSuccess) {
-
+            setState(() {
+              _enabled = true;
+            }),
             Navigator.pushReplacementNamed(context, "/list")
-          }
+          },
         },
         builder: (context, state) {
+          if (state is LoginLoading) {
+            _enabled = false;
+          }
           return Scaffold(
             key: _scaffoldKey,
             appBar: AppBar(
@@ -97,6 +103,7 @@ class _LoginPageBlocState extends State<LoginPageBloc> {
                 children: [
                   TextFormField(
                     controller: _emailController,
+                    enabled: _enabled,
                     decoration: InputDecoration(
                       labelText: 'Email',
                       errorText: _emailError,
@@ -110,6 +117,7 @@ class _LoginPageBlocState extends State<LoginPageBloc> {
                   const SizedBox(height: 16.0),
                   TextFormField(
                     controller: _passwordController,
+                    enabled: _enabled,
                     decoration: InputDecoration(
                       labelText: 'Password',
                       errorText: _passwordError,
@@ -126,26 +134,31 @@ class _LoginPageBlocState extends State<LoginPageBloc> {
                     children: [
                       Checkbox(
                         value: _rememberMe,
-                        onChanged: (value) {
+                        onChanged: _enabled ? (value) {
                           setState(() {
                             _rememberMe = value!;
-                          });
-                        },
+                          });} : null,
                       ),
                       const Text('Remember me'),
                     ],
                   ),
                   const SizedBox(height: 16.0),
                   ElevatedButton(
-                    onPressed: () => {
+                    onPressed: _enabled ? () {
                       if (login()) {
+                        print("login");
                         context.read<LoginBloc>().add(LoginSubmitEvent(
-                            _emailController.text,
-                            _passwordController.text,
-                            _rememberMe)
-                        )},
-                        GetIt.I<SharedPreferences>().containsKey("token")
-                    },
+                          _emailController.text,
+                          _passwordController.text,
+                          _rememberMe,
+                        ));
+                      }
+                      try{
+                        GetIt.I<SharedPreferences>().containsKey("token");
+                      } catch (error) {
+                        print("Error");
+                      }
+                    } : null,
                     child: const Text('Login'),
                   ),
                 ],
